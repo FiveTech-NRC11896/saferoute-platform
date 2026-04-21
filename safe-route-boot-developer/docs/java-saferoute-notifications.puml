@@ -1,0 +1,146 @@
+@startuml
+skinparam monochrome false
+
+package "notifications.domain.model.entity" {
+  class Notification {
+    - id: UUID
+    - organizationId: UUID
+    - parentId: UUID
+    - tripId: UUID
+    - category: String
+    - deliveryState: String
+    - message: String
+    - sentAt: LocalDateTime
+    + queue(): void
+    + dispatch(): void
+    + markDelivered(): void
+    + isDelivered(): boolean
+    + getCategory(): String
+    + getMessage(): String
+    + getId(): UUID
+  }
+
+  class Alert {
+    - id: UUID
+    - notificationId: UUID
+    - triggeredAt: LocalDateTime
+    + trigger(): void
+    + getTriggeredAt(): LocalDateTime
+    + isPanic(): boolean
+    + getId(): UUID
+  }
+
+  class Announcement {
+    - id: UUID
+    - notificationId: UUID
+    - routeId: UUID
+    - message: String
+    - publishedAt: LocalDateTime
+    + publish(): void
+    + getMessage(): String
+    + getPublishedAt(): LocalDateTime
+    + getId(): UUID
+  }
+}
+
+package "notifications.interfaces.rest.resources" {
+  class CreateNotificationRequest {
+    + organizationId: String
+    + parentId: String
+    + tripId: String
+    + category: String
+    + message: String
+  }
+
+  class NotificationResponse {
+    + id: String
+    + organizationId: String
+    + parentId: String
+    + tripId: String
+    + category: String
+    + deliveryState: String
+    + message: String
+    + sentAt: String
+  }
+
+  class CreateAlertRequest {
+    + notificationId: String
+  }
+
+  class AlertResponse {
+    + id: String
+    + notificationId: String
+    + triggeredAt: String
+  }
+
+  class CreateAnnouncementRequest {
+    + notificationId: String
+    + routeId: String
+    + message: String
+  }
+
+  class AnnouncementResponse {
+    + id: String
+    + notificationId: String
+    + routeId: String
+    + message: String
+    + publishedAt: String
+  }
+}
+
+package "notifications.interfaces.rest.assemblers" {
+  class NotificationAssembler {
+    + toEntityFromRequest(request: CreateNotificationRequest): Notification
+    + toResourceFromEntity(notification: Notification): NotificationResponse
+  }
+
+  class AlertAssembler {
+    + toEntityFromRequest(request: CreateAlertRequest): Alert
+    + toResourceFromEntity(alert: Alert): AlertResponse
+  }
+
+  class AnnouncementAssembler {
+    + toEntityFromRequest(request: CreateAnnouncementRequest): Announcement
+    + toResourceFromEntity(announcement: Announcement): AnnouncementResponse
+  }
+}
+
+package "notifications.interfaces.rest.controllers" {
+  class NotificationController {
+    + createNotification(request: CreateNotificationRequest): NotificationResponse
+    + getNotificationById(id: String): NotificationResponse
+    + getNotificationsByParent(parentId: String): List<NotificationResponse>
+    + dispatchNotification(id: String): NotificationResponse
+  }
+
+  class AlertController {
+    + triggerAlert(request: CreateAlertRequest): AlertResponse
+    + getAlertsByNotification(notificationId: String): List<AlertResponse>
+  }
+
+  class AnnouncementController {
+    + createAnnouncement(request: CreateAnnouncementRequest): AnnouncementResponse
+    + getAnnouncementsByRoute(routeId: String): List<AnnouncementResponse>
+  }
+}
+
+CreateNotificationRequest --> NotificationAssembler : uses
+NotificationAssembler --> Notification : creates
+NotificationAssembler --> NotificationResponse : creates
+NotificationController --> NotificationAssembler : uses
+NotificationController --> CreateNotificationRequest : uses
+NotificationController --> NotificationResponse : returns
+CreateAlertRequest --> AlertAssembler : uses
+AlertAssembler --> Alert : creates
+AlertAssembler --> AlertResponse : creates
+AlertController --> AlertAssembler : uses
+AlertController --> AlertResponse : returns
+CreateAnnouncementRequest --> AnnouncementAssembler : uses
+AnnouncementAssembler --> Announcement : creates
+AnnouncementAssembler --> AnnouncementResponse : creates
+AnnouncementController --> AnnouncementAssembler : uses
+AnnouncementController --> AnnouncementResponse : returns
+Notification "1" *--> "0..*" Alert : contains
+Notification "1" *--> "0..*" Announcement : contains
+
+@enduml

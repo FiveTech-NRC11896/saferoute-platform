@@ -1,0 +1,206 @@
+@startuml
+skinparam monochrome false
+
+package "fleet.domain.model.entity" {
+  class Route {
+    - id: UUID
+    - organizationId: UUID
+    - name: String
+    - routeState: String
+    - departureTime: LocalTime
+    - serviceDays: List<String>
+    - vehicleId: UUID
+    - assignmentId: UUID
+    + defineRoute(name: String): void
+    + addStop(stop: Stop): void
+    + removeStop(stopId: UUID): void
+    + activate(): void
+    + deactivate(): void
+    + getStopSequence(): List<Stop>
+    + getTotalStops(): int
+    + getId(): UUID
+  }
+
+  class Stop {
+    - id: UUID
+    - routeId: UUID
+    - name: String
+    - latitude: double
+    - longitude: double
+    - stopOrder: int
+    + getNextStop(): Stop
+    + isFirst(): boolean
+    + isLast(): boolean
+    + getId(): UUID
+  }
+
+  class Vehicle {
+    - id: UUID
+    - organizationId: UUID
+    - plate: String
+    - model: String
+    - brand: String
+    - capacity: int
+    + isAvailable(): boolean
+    + getPlate(): String
+    + getCapacity(): int
+    + getId(): UUID
+  }
+
+  class Assignment {
+    - id: UUID
+    - routeId: UUID
+    - driverId: UUID
+    - childIds: List<UUID>
+    + assignDriver(driverId: UUID): void
+    + assignChild(childId: UUID): void
+    + removeChild(childId: UUID): void
+    + getDriverId(): UUID
+    + getChildCount(): int
+    + getId(): UUID
+  }
+}
+
+package "fleet.interfaces.rest.resources" {
+  class CreateRouteRequest {
+    + name: String
+    + organizationId: String
+    + departureTime: String
+    + serviceDays: List<String>
+  }
+
+  class RouteResponse {
+    + id: String
+    + name: String
+    + organizationId: String
+    + routeState: String
+    + departureTime: String
+    + serviceDays: List<String>
+    + vehicleId: String
+  }
+
+  class CreateStopRequest {
+    + routeId: String
+    + name: String
+    + latitude: double
+    + longitude: double
+    + stopOrder: int
+  }
+
+  class StopResponse {
+    + id: String
+    + routeId: String
+    + name: String
+    + latitude: double
+    + longitude: double
+    + stopOrder: int
+  }
+
+  class CreateVehicleRequest {
+    + organizationId: String
+    + plate: String
+    + model: String
+    + brand: String
+    + capacity: int
+  }
+
+  class VehicleResponse {
+    + id: String
+    + organizationId: String
+    + plate: String
+    + model: String
+    + brand: String
+    + capacity: int
+  }
+
+  class CreateAssignmentRequest {
+    + routeId: String
+    + driverId: String
+    + childIds: List<String>
+  }
+
+  class AssignmentResponse {
+    + id: String
+    + routeId: String
+    + driverId: String
+    + childIds: List<String>
+  }
+}
+
+package "fleet.interfaces.rest.assemblers" {
+  class RouteAssembler {
+    + toEntityFromRequest(request: CreateRouteRequest): Route
+    + toResourceFromEntity(route: Route): RouteResponse
+  }
+
+  class StopAssembler {
+    + toEntityFromRequest(request: CreateStopRequest): Stop
+    + toResourceFromEntity(stop: Stop): StopResponse
+  }
+
+  class VehicleAssembler {
+    + toEntityFromRequest(request: CreateVehicleRequest): Vehicle
+    + toResourceFromEntity(vehicle: Vehicle): VehicleResponse
+  }
+
+  class AssignmentAssembler {
+    + toEntityFromRequest(request: CreateAssignmentRequest): Assignment
+    + toResourceFromEntity(assignment: Assignment): AssignmentResponse
+  }
+}
+
+package "fleet.interfaces.rest.controllers" {
+  class RouteController {
+    + createRoute(request: CreateRouteRequest): RouteResponse
+    + getRouteById(id: String): RouteResponse
+    + getRoutesByOrganization(organizationId: String): List<RouteResponse>
+    + activateRoute(id: String): RouteResponse
+    + deactivateRoute(id: String): RouteResponse
+  }
+
+  class StopController {
+    + addStop(request: CreateStopRequest): StopResponse
+    + getStopsByRoute(routeId: String): List<StopResponse>
+    + deleteStop(id: String): void
+  }
+
+  class VehicleController {
+    + createVehicle(request: CreateVehicleRequest): VehicleResponse
+    + getVehicleById(id: String): VehicleResponse
+    + getVehiclesByOrganization(organizationId: String): List<VehicleResponse>
+    + deleteVehicle(id: String): void
+  }
+
+  class AssignmentController {
+    + createAssignment(request: CreateAssignmentRequest): AssignmentResponse
+    + getAssignmentByRoute(routeId: String): AssignmentResponse
+    + addChildToAssignment(assignmentId: String, childId: String): AssignmentResponse
+    + removeChildFromAssignment(assignmentId: String, childId: String): AssignmentResponse
+  }
+}
+
+CreateRouteRequest --> RouteAssembler : uses
+RouteAssembler --> Route : creates
+RouteAssembler --> RouteResponse : creates
+RouteController --> RouteAssembler : uses
+RouteController --> CreateRouteRequest : uses
+RouteController --> RouteResponse : returns
+CreateStopRequest --> StopAssembler : uses
+StopAssembler --> Stop : creates
+StopAssembler --> StopResponse : creates
+StopController --> StopAssembler : uses
+StopController --> StopResponse : returns
+CreateVehicleRequest --> VehicleAssembler : uses
+VehicleAssembler --> Vehicle : creates
+VehicleAssembler --> VehicleResponse : creates
+VehicleController --> VehicleAssembler : uses
+VehicleController --> VehicleResponse : returns
+CreateAssignmentRequest --> AssignmentAssembler : uses
+AssignmentAssembler --> Assignment : creates
+AssignmentAssembler --> AssignmentResponse : creates
+AssignmentController --> AssignmentAssembler : uses
+AssignmentController --> AssignmentResponse : returns
+Route "1" *--> "1..*" Stop : contains
+Route "1" --> "1" Assignment : has
+
+@enduml

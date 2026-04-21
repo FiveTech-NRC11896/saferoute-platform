@@ -1,0 +1,130 @@
+@startuml
+skinparam monochrome false
+
+package "iam.domain.model.entity" {
+  class User {
+    - id: UUID
+    - organizationId: UUID
+    - firstName: String
+    - lastName: String
+    - email: String
+    - passwordHash: String
+    - roleTier: String
+    + register(): void
+    + authenticate(password: String): boolean
+    + changeRole(roleTier: String): void
+    + getFullName(): String
+    + getEmail(): String
+    + getId(): UUID
+    + getOrganizationId(): UUID
+  }
+
+  class Organization {
+    - id: UUID
+    - name: String
+    - status: String
+    - createdAt: LocalDateTime
+    + create(name: String): void
+    + suspend(): void
+    + activate(): void
+    + isActive(): boolean
+    + getName(): String
+    + getId(): UUID
+  }
+
+  class Role {
+    - id: int
+    - roleTier: String
+    + getRoleName(): String
+    + isAdmin(): boolean
+    + isDriver(): boolean
+    + isParent(): boolean
+  }
+}
+
+package "iam.interfaces.rest.resources" {
+  class RegisterUserRequest {
+    + firstName: String
+    + lastName: String
+    + email: String
+    + password: String
+    + roleTier: String
+    + organizationId: String
+  }
+
+  class UserResponse {
+    + id: String
+    + fullName: String
+    + email: String
+    + roleTier: String
+    + organizationId: String
+  }
+
+  class SignInRequest {
+    + email: String
+    + password: String
+  }
+
+  class SignInResponse {
+    + token: String
+    + userId: String
+    + roleTier: String
+  }
+
+  class CreateOrganizationRequest {
+    + name: String
+  }
+
+  class OrganizationResponse {
+    + id: String
+    + name: String
+    + status: String
+    + createdAt: String
+  }
+}
+
+package "iam.interfaces.rest.assemblers" {
+  class UserAssembler {
+    + toEntityFromRequest(request: RegisterUserRequest): User
+    + toResourceFromEntity(user: User): UserResponse
+  }
+
+  class OrganizationAssembler {
+    + toEntityFromRequest(request: CreateOrganizationRequest): Organization
+    + toResourceFromEntity(organization: Organization): OrganizationResponse
+  }
+}
+
+package "iam.interfaces.rest.controllers" {
+  class UserController {
+    + registerUser(request: RegisterUserRequest): UserResponse
+    + signIn(request: SignInRequest): SignInResponse
+    + getUserById(id: String): UserResponse
+    + deleteUser(id: String): void
+  }
+
+  class OrganizationController {
+    + createOrganization(request: CreateOrganizationRequest): OrganizationResponse
+    + getOrganizationById(id: String): OrganizationResponse
+    + suspendOrganization(id: String): void
+    + activateOrganization(id: String): void
+  }
+}
+
+RegisterUserRequest --> UserAssembler : uses
+UserAssembler --> User : creates
+UserAssembler --> UserResponse : creates
+UserController --> UserAssembler : uses
+UserController --> RegisterUserRequest : uses
+UserController --> SignInRequest : uses
+UserController --> UserResponse : returns
+UserController --> SignInResponse : returns
+CreateOrganizationRequest --> OrganizationAssembler : uses
+OrganizationAssembler --> Organization : creates
+OrganizationAssembler --> OrganizationResponse : creates
+OrganizationController --> OrganizationAssembler : uses
+OrganizationController --> CreateOrganizationRequest : uses
+OrganizationController --> OrganizationResponse : returns
+User --> Role : has
+
+@enduml
